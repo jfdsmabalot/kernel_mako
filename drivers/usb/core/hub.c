@@ -832,6 +832,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
         }
  init2:
 
+<<<<<<< HEAD
         /* Check each port and set hub->change_bits to let khubd know
          * which ports need attention.
          */
@@ -919,6 +920,100 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
                                 set_bit(port1, hub->change_bits);
 
                 } else if (udev->persist_enabled) {
+=======
+	/* Check each port and set hub->change_bits to let khubd know
+	 * which ports need attention.
+	 */
+	for (port1 = 1; port1 <= hdev->maxchild; ++port1) {
+		struct usb_device *udev = hdev->children[port1-1];
+		u16 portstatus, portchange;
+
+		portstatus = portchange = 0;
+		status = hub_port_status(hub, port1, &portstatus, &portchange);
+		if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
+			dev_dbg(hub->intfdev,
+					"port %d: status %04x change %04x\n",
+					port1, portstatus, portchange);
+
+		/* After anything other than HUB_RESUME (i.e., initialization
+		 * or any sort of reset), every port should be disabled.
+		 * Unconnected ports should likewise be disabled (paranoia),
+		 * and so should ports for which we have no usb_device.
+		 */
+		if ((portstatus & USB_PORT_STAT_ENABLE) && (
+				type != HUB_RESUME ||
+				!(portstatus & USB_PORT_STAT_CONNECTION) ||
+				!udev ||
+				udev->state == USB_STATE_NOTATTACHED)) {
+			/*
+			 * USB3 protocol ports will automatically transition
+			 * to Enabled state when detect an USB3.0 device attach.
+			 * Do not disable USB3 protocol ports.
+			 */
+			if (!hub_is_superspeed(hdev)) {
+				clear_port_feature(hdev, port1,
+						   USB_PORT_FEAT_ENABLE);
+				portstatus &= ~USB_PORT_STAT_ENABLE;
+			} else {
+				/* Pretend that power was lost for USB3 devs */
+				portstatus &= ~USB_PORT_STAT_ENABLE;
+			}
+		}
+
+		/* Clear status-change flags; we'll debounce later */
+		if (portchange & USB_PORT_STAT_C_CONNECTION) {
+			need_debounce_delay = true;
+			clear_port_feature(hub->hdev, port1,
+					USB_PORT_FEAT_C_CONNECTION);
+		}
+		if (portchange & USB_PORT_STAT_C_ENABLE) {
+			need_debounce_delay = true;
+			clear_port_feature(hub->hdev, port1,
+					USB_PORT_FEAT_C_ENABLE);
+		}
+		if (portchange & USB_PORT_STAT_C_RESET) {
+			need_debounce_delay = true;
+			clear_port_feature(hub->hdev, port1,
+					USB_PORT_FEAT_C_RESET);
+		}
+		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
+				hub_is_superspeed(hub->hdev)) {
+			need_debounce_delay = true;
+			clear_port_feature(hub->hdev, port1,
+					USB_PORT_FEAT_C_BH_PORT_RESET);
+		}
+		/* We can forget about a "removed" device when there's a
+		 * physical disconnect or the connect status changes.
+		 */
+		if (!(portstatus & USB_PORT_STAT_CONNECTION) ||
+				(portchange & USB_PORT_STAT_C_CONNECTION))
+			clear_bit(port1, hub->removed_bits);
+
+		if (!udev || udev->state == USB_STATE_NOTATTACHED) {
+			/* Tell khubd to disconnect the device or
+			 * check for a new connection
+			 */
+			if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
+				set_bit(port1, hub->change_bits);
+
+		} else if (portstatus & USB_PORT_STAT_ENABLE) {
+			bool port_resumed = (portstatus &
+					USB_PORT_STAT_LINK_STATE) ==
+				USB_SS_PORT_LS_U0;
+			/* The power session apparently survived the resume.
+			 * If there was an overcurrent or suspend change
+			 * (i.e., remote wakeup request), have khubd
+			 * take care of it.  Look at the port link state
+			 * for USB 3.0 hubs, since they don't have a suspend
+			 * change bit, and they don't set the port link change
+			 * bit on device-initiated resume.
+			 */
+			if (portchange || (hub_is_superspeed(hub->hdev) &&
+						port_resumed))
+				set_bit(port1, hub->change_bits);
+
+		} else if (udev->persist_enabled) {
+>>>>>>> 63dee98... 3.4.87
 #ifdef CONFIG_PM
                         udev->reset_resume = 1;
 #endif
@@ -1924,6 +2019,7 @@ out:
  */
 static int usb_enumerate_device(struct usb_device *udev)
 {
+<<<<<<< HEAD
         int err;
 
         if (udev->config == NULL) {
@@ -1949,6 +2045,32 @@ static int usb_enumerate_device(struct usb_device *udev)
         err = usb_enumerate_device_otg(udev);
 fail:
         return err;
+=======
+	int err;
+
+	if (udev->config == NULL) {
+		err = usb_get_configuration(udev);
+		if (err < 0) {
+			dev_err(&udev->dev, "can't read configurations, error %d\n",
+				err);
+			return err;
+		}
+	}
+
+	/* read the standard strings and cache them if present */
+	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+	udev->manufacturer = usb_cache_string(udev,
+					      udev->descriptor.iManufacturer);
+	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+
+	err = usb_enumerate_device_otg(udev);
+	if (err < 0)
+		return err;
+
+	usb_detect_interface_quirks(udev);
+
+	return 0;
+>>>>>>> 63dee98... 3.4.87
 }
 
 static void set_usb_port_removable(struct usb_device *udev)
@@ -4429,6 +4551,7 @@ static int descriptors_changed(struct usb_device *udev,
  */
 static int usb_reset_and_verify_device(struct usb_device *udev)
 {
+<<<<<<< HEAD
         struct usb_device                *parent_hdev = udev->parent;
         struct usb_hub                        *parent_hub;
         struct usb_hcd                        *hcd = bus_to_hcd(udev->bus);
@@ -4464,6 +4587,49 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
         if (ret < 0)
                 goto re_enumerate;
+=======
+	struct usb_device		*parent_hdev = udev->parent;
+	struct usb_hub			*parent_hub;
+	struct usb_hcd			*hcd = bus_to_hcd(udev->bus);
+	struct usb_device_descriptor	descriptor = udev->descriptor;
+	int 				i, ret = 0;
+	int				port1 = udev->portnum;
+
+	if (udev->state == USB_STATE_NOTATTACHED ||
+			udev->state == USB_STATE_SUSPENDED) {
+		dev_dbg(&udev->dev, "device reset not allowed in state %d\n",
+				udev->state);
+		return -EINVAL;
+	}
+
+	if (!parent_hdev) {
+		/* this requires hcd-specific logic; see ohci_restart() */
+		dev_dbg(&udev->dev, "%s for root hub!\n", __func__);
+		return -EISDIR;
+	}
+	parent_hub = hdev_to_hub(parent_hdev);
+
+	/* Disable USB2 hardware LPM.
+	 * It will be re-enabled by the enumeration process.
+	 */
+	if (udev->usb2_hw_lpm_enabled == 1)
+		usb_set_usb2_hardware_lpm(udev, 0);
+
+	set_bit(port1, parent_hub->busy_bits);
+	for (i = 0; i < SET_CONFIG_TRIES; ++i) {
+
+		/* ep0 maxpacket size may change; let the HCD know about it.
+		 * Other endpoints will be handled by re-enumeration. */
+		usb_ep0_reinit(udev);
+		ret = hub_port_init(parent_hub, udev, port1, i);
+		if (ret >= 0 || ret == -ENOTCONN || ret == -ENODEV)
+			break;
+	}
+	clear_bit(port1, parent_hub->busy_bits);
+
+	if (ret < 0)
+		goto re_enumerate;
+>>>>>>> 63dee98... 3.4.87
  
         /* Device might have changed firmware (DFU or similar) */
         if (descriptors_changed(udev, &descriptor)) {
