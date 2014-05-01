@@ -832,6 +832,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
         }
  init2:
 
+<<<<<<< HEAD
         /* Check each port and set hub->change_bits to let khubd know
          * which ports need attention.
          */
@@ -919,6 +920,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
                                 set_bit(port1, hub->change_bits);
 
                 } else if (udev->persist_enabled) {
+=======
 	/* Check each port and set hub->change_bits to let khubd know
 	 * which ports need attention.
 	 */
@@ -1011,6 +1013,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 				set_bit(port1, hub->change_bits);
 
 		} else if (udev->persist_enabled) {
+>>>>>>> 63dee98... 3.4.87
 #ifdef CONFIG_PM
                         udev->reset_resume = 1;
 #endif
@@ -2016,6 +2019,7 @@ out:
  */
 static int usb_enumerate_device(struct usb_device *udev)
 {
+<<<<<<< HEAD
         int err;
 
         if (udev->config == NULL) {
@@ -2041,6 +2045,7 @@ static int usb_enumerate_device(struct usb_device *udev)
         err = usb_enumerate_device_otg(udev);
 fail:
         return err;
+=======
 	int err;
 
 	if (udev->config == NULL) {
@@ -2065,6 +2070,7 @@ fail:
 	usb_detect_interface_quirks(udev);
 
 	return 0;
+>>>>>>> 63dee98... 3.4.87
 }
 
 static void set_usb_port_removable(struct usb_device *udev)
@@ -4545,6 +4551,7 @@ static int descriptors_changed(struct usb_device *udev,
  */
 static int usb_reset_and_verify_device(struct usb_device *udev)
 {
+<<<<<<< HEAD
         struct usb_device                *parent_hdev = udev->parent;
         struct usb_hub                        *parent_hub;
         struct usb_hcd                        *hcd = bus_to_hcd(udev->bus);
@@ -4580,6 +4587,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
         if (ret < 0)
                 goto re_enumerate;
+=======
 	struct usb_device		*parent_hdev = udev->parent;
 	struct usb_hub			*parent_hub;
 	struct usb_hcd			*hcd = bus_to_hcd(udev->bus);
@@ -4621,6 +4629,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
 	if (ret < 0)
 		goto re_enumerate;
+>>>>>>> 63dee98... 3.4.87
  
         /* Device might have changed firmware (DFU or similar) */
         if (descriptors_changed(udev, &descriptor)) {
