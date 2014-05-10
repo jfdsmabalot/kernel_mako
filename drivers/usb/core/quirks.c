@@ -136,8 +136,6 @@ static const struct usb_device_id usb_quirk_list[] = {
 
 static const struct usb_device_id usb_interface_quirk_list[] = {
 	/* Logitech UVC Cameras */
-	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
-	  .driver_info = USB_QUIRK_RESET_RESUME },
 
 	{ }  /* terminating entry must be last */
 };
